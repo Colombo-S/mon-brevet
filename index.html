@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mon Brevet">
+<meta name="theme-color" content="#185FA5">
+<title>Mon Brevet — DNB</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f4f4f4;color:#111;max-width:520px;margin:0 auto;min-height:100vh;padding-bottom:30px}
+.screen{display:none;padding:16px;animation:fi .2s ease}
+.screen.active{display:block}
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+h1{font-size:20px;font-weight:700}
+h2{font-size:17px;font-weight:700;margin-bottom:4px}
+.back{background:none;border:none;color:#888;font-size:14px;cursor:pointer;padding:0;margin-bottom:14px;display:block}
+.card{background:#fff;border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.btn{width:100%;padding:13px;border-radius:10px;border:1.5px solid currentColor;font-size:14px;font-weight:700;cursor:pointer;margin-top:10px;display:block;text-align:center;font-family:inherit}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.bar{background:#e5e5e5;border-radius:5px;height:5px;overflow:hidden;margin:5px 0 3px}
+.bar-f{height:100%;border-radius:5px;transition:width .5s}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px}
+.niv-btn{padding:6px 14px;border-radius:20px;border:1.5px solid #ddd;background:#fff;font-size:12px;cursor:pointer;font-weight:500;font-family:inherit}
+.opt{display:block;width:100%;text-align:left;padding:11px 13px;border-radius:9px;border:1.5px solid #ddd;background:#f9f9f9;font-size:13px;margin-bottom:7px;cursor:pointer;line-height:1.5;font-family:inherit}
+.opt.ok{background:#e8f8f1;border-color:#27ae60}
+.opt.ko{background:#fef2f2;border-color:#e74c3c}
+.info-box{border-radius:9px;padding:10px 13px;margin:8px 0}
+.sec-lbl{font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;margin:16px 0 7px}
+.chap{background:#fff;border-radius:10px;padding:11px 12px;margin-bottom:7px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.chap p{font-size:12px;font-weight:600;margin-bottom:8px;line-height:1.4}
+.mode-row{display:flex;gap:5px}
+.mode-btn{flex:1;padding:8px 2px;border-radius:7px;border:1px solid #ddd;background:#f5f5f5;font-size:11px;cursor:pointer;font-weight:600;font-family:inherit}
+.timer{font-family:monospace;font-size:24px;font-weight:700}
+.prog{background:#e5e5e5;border-radius:5px;height:5px;overflow:hidden;margin-bottom:14px}
+.prog-f{height:100%;border-radius:5px;transition:width 1s linear}
+.exam-item{display:flex;justify-content:space-between;align-items:center;padding:10px 13px;background:#fff;border-radius:9px;margin-bottom:6px;border:1px solid #eee;cursor:pointer;font-size:12px;font-weight:500}
+</style>
+</head>
+<body>
+
+<div id="s-home" class="screen active">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-top:8px">
+    <div><h1>🎓 Mon Brevet</h1><p style="font-size:11px;color:#888;margin-top:2px">Programme officiel complet · DNB 3ème</p></div>
+    <span style="background:#FAEEDA;border-radius:10px;padding:6px 12px;font-weight:700;color:#854F0B;font-size:13px">🔥 3 jours</span>
+  </div>
+  <div class="grid2" id="score-grid"></div>
+  <p style="font-size:12px;font-weight:700;color:#555;margin-bottom:8px">Choisir une matière</p>
+  <div class="grid2" id="mat-grid"></div>
+  <div class="card">
+    <p style="font-size:12px;font-weight:700;margin-bottom:10px">⏱ Simulation d'épreuve</p>
+    <div class="grid2" id="exam-grid"></div>
+  </div>
+</div>
+
+<div id="s-mat" class="screen">
+  <button class="back" onclick="show('s-home')">← Accueil</button>
+  <h2 id="mat-title"></h2>
+  <p id="mat-sub" style="font-size:11px;color:#888;margin-bottom:12px"></p>
+  <div id="niv-row" style="display:flex;gap:6px;margin-bottom:4px;flex-wrap:wrap"></div>
+  <div id="chap-list"></div>
+</div>
+
+<div id="s-act" class="screen">
+  <button class="back" id="act-back">←</button>
+  <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap" id="act-tags"></div>
+  <div id="act-body"></div>
+</div>
+
+<div id="s-exam" class="screen">
+  <button class="back" onclick="stopExam()">← Quitter</button>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <h2 id="exam-title" style="font-size:15px"></h2>
+    <span class="timer" id="exam-timer">00:00</span>
+  </div>
+  <div class="prog"><div class="prog-f" id="exam-pf"></div></div>
+  <div id="exam-body"></div>
+</div>
+
+<script>
+const M=[
+  {k:"fr",l:"Français",i:"📖",c:"#185FA5",bg:"#E6F1FB",s:[
+    {t:"Étude de la langue",ch:["Grammaire & syntaxe","Conjugaison & modes verbaux","Orthographe grammaticale","Vocabulaire & lexique"]},
+    {t:"Lecture & Littérature",ch:["Lecture & compréhension","Figures de style","Genres littéraires"]},
+    {t:"Écriture",ch:["Rédaction narrative","Argumentation","Réécriture de texte"]},
+    {t:"Épreuve",ch:["Dictée préparée","Expression orale"]}
+  ]},
+  {k:"ma",l:"Maths",i:"📐",c:"#0F6E56",bg:"#E1F5EE",s:[
+    {t:"Nombres & Calcul",ch:["Fractions & calcul numérique","Puissances","Identités remarquables"]},
+    {t:"Algèbre",ch:["Équations du 1er degré","Systèmes d'équations","Inéquations"]},
+    {t:"Géométrie",ch:["Pythagore & Thalès","Trigonométrie","Géométrie dans l'espace"]},
+    {t:"Fonctions & Algo",ch:["Fonctions linéaires & affines","Probabilités & stats","Algorithmique"]}
+  ]},
+  {k:"hg",l:"Histoire-Géo & EMC",i:"🌍",c:"#993C1D",bg:"#FAECE7",s:[
+    {t:"Guerres & totalitarismes",ch:["1ère Guerre Mondiale","Régimes totalitaires","2ème Guerre Mondiale","Vichy & Résistance"]},
+    {t:"Monde depuis 1945",ch:["Guerre froide","Décolonisation","Construction européenne","Géopolitique actuelle"]},
+    {t:"La République",ch:["Refondation 1944-1947","Ve République","Évolutions sociales"]},
+    {t:"Géographie",ch:["Espaces productifs français","Villes & urbanisation","France & mondialisation","Développement durable"]},
+    {t:"EMC",ch:["Démocratie & droits","Valeurs républicaines"]}
+  ]},
+  {k:"sv",l:"SVT",i:"🔬",c:"#534AB7",bg:"#EEEDFE",s:[
+    {t:"Vivant & santé",ch:["Le vivant & évolution","Corps humain & santé","Génétique & reproduction"]},
+    {t:"Environnement",ch:["Écosystèmes & biodiversité","Géologie & tectonique","Microorganismes & immunité"]}
+  ]},
+  {k:"pc",l:"Physique-Chimie",i:"⚗️",c:"#B5590A",bg:"#FEF3E8",s:[
+    {t:"Matière",ch:["Atomes & molécules","Réactions chimiques","Acides & bases"]},
+    {t:"Forces & Mouvements",ch:["Description du mouvement","Forces & interactions","Lois de Newton"]},
+    {t:"Énergie",ch:["Formes d'énergie","Énergie électrique","Enjeux énergétiques"]},
+    {t:"Ondes",ch:["Lumière & optique","Signaux sonores"]}
+  ]},
+  {k:"te",l:"Technologie",i:"⚙️",c:"#2E6B5E",bg:"#E4F4F1",s:[
+    {t:"Objets techniques",ch:["Analyse des objets techniques","Matériaux & choix","Mécanismes & transmission"]},
+    {t:"Numérique",ch:["Chaîne d'information","Programmation appliquée","Réseaux & données"]},
+    {t:"Énergie & Durabilité",ch:["Chaîne d'énergie","Éco-conception"]}
+  ]}
+];
+
+const NV=["Débutant","Intermédiaire","Expert"];
+const API_KEY="MACLE_ICI";
+let cMat=null,cChap=null,cNiv=1,cMod=null;
+let examInt=null,examDur=0,examTl=0;
+const scores={fr:0,ma:0,hg:0,sv:0,pc:0,te:0};
+const gm=k=>M.find(m=>m.k===k);
+const ach=k=>gm(k).s.flatMap(s=>s.ch);
+const esc=s=>(s||"").replace(/'/g,"\\'");
+
+function buildSys(mat,chap,niv,mod){
+  const b=`Professeur DNB expert en ${mat}. Niveau ${niv}. RÉPONDS UNIQUEMENT EN JSON VALIDE, sans markdown ni texte avant/après.`;
+  if(mod==="fiche") return b+` Fiche de révision sur "${chap}": {"titre":"...","points":["...","...","..."],"astuce":"..."}`;
+  if(mod==="quiz")  return b+` QCM sur "${chap}": {"question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"reponse":"A","explication":"..."}`;
+  return b+` Exercice type brevet sur "${chap}": {"consigne":"...","question":"...","correction":"...","conseil":"..."}`;
+}
+
+function parseJ(txt){
+  try{
+    let c=txt.replace(/```json|```/gi,"").trim();
+    const s=c.indexOf("{"),e=c.lastIndexOf("}");
+    if(s<0||e<0)return null;
+    return JSON.parse(c.slice(s,e+1));
+  }catch{return null;}
+}
+
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+  if(id==='s-home')initHome();
+}
+
+function initHome(){
+  document.getElementById('score-grid').innerHTML=M.map(m=>`
+    <div class="card" style="padding:10px">
+      <div style="font-size:16px;margin-bottom:3px">${m.i}</div>
+      <div style="font-size:11px;font-weight:700;color:${m.c};line-height:1.3;margin-bottom:4px">${m.l}</div>
+      <div class="bar"><div class="bar-f" style="width:${scores[m.k]}%;background:${m.c}"></div></div>
+      <div style="font-size:10px;color:#aaa">${scores[m.k]}%</div>
+    </div>`).join('');
+  document.getElementById('mat-grid').innerHTML=M.map(m=>`
+    <button onclick="openMat('${m.k}')" style="background:${m.bg};border:2px solid ${m.c}22;border-radius:12px;padding:13px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:9px">
+      <span style="font-size:22px">${m.i}</span>
+      <div><div style="font-weight:700;color:${m.c};font-size:12px;line-height:1.3">${m.l}</div><div style="font-size:10px;color:#999;margin-top:2px">${ach(m.k).length} chapitres</div></div>
+    </button>`).join('');
+  document.getElementById('exam-grid').innerHTML=M.map(m=>`
+    <button onclick="startExam('${m.k}')" style="background:#fff;border:1px solid #ddd;border-radius:9px;padding:9px 6px;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit">${m.i} ${m.l}</button>`).join('');
+}
+
+function openMat(k){
+  cMat=k;
+  const m=gm(k);
+  document.getElementById('mat-title').textContent=`${m.i} ${m.l}`;
+  document.getElementById('mat-sub').textContent=`${ach(k).length} chapitres · Programme officiel DNB`;
+  document.getElementById('niv-row').innerHTML=NV.map((n,i)=>`
+    <button class="niv-btn" onclick="setNiv(${i})"
+      style="color:${cNiv===i?m.c:'#888'};border-color:${cNiv===i?m.c:'#ddd'};background:${cNiv===i?m.bg:'#fff'};font-weight:${cNiv===i?700:500}">${n}</button>`).join('');
+  document.getElementById('chap-list').innerHTML=m.s.map(sec=>`
+    <p class="sec-lbl" style="color:${m.c}">${sec.t}</p>
+    ${sec.ch.map(ch=>`
+      <div class="chap">
+        <p>${ch}</p>
+        <div class="mode-row">
+          <button class="mode-btn" onclick="openAct('${m.k}','${esc(ch)}','fiche')">📄 Fiche</button>
+          <button class="mode-btn" onclick="openAct('${m.k}','${esc(ch)}','quiz')">🎯 Quiz</button>
+          <button class="mode-btn" onclick="openAct('${m.k}','${esc(ch)}','exercice')">✏️ Exo</button>
+        </div>
+      </div>`).join('')}`).join('');
+  show('s-mat');
+}
+
+function setNiv(i){cNiv=i;openMat(cMat);}
+
+function openAct(k,ch,mod){
+  cMat=k;cChap=ch;cMod=mod;
+  const m=gm(k);
+  document.getElementById('act-back').textContent=`← ${m.l}`;
+  document.getElementById('act-back').onclick=()=>show('s-mat');
+  document.getElementById('act-tags').innerHTML=`
+    <span class="tag" style="background:${m.bg};color:${m.c}">${ch}</span>
+    <span style="font-size:11px;color:#888">· ${NV[cNiv]} · ${mod==='fiche'?'Fiche':mod==='quiz'?'Quiz':'Exercice'}</span>`;
+  document.getElementById('act-body').innerHTML=`<div style="text-align:center;padding:40px"><span style="font-size:32px">⏳</span><p style="color:#888;margin-top:10px;font-size:13px">L'IA génère ton contenu…</p></div>`;
+  show('s-act');
+  callAPI(k,ch,cNiv,mod);
+}
+
+async function callAPI(k,ch,ni,mod,retry=0){
+  const m=gm(k);
+  try{
+    const r=await fetch("/.netlify/functions/claude",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({system:buildSys(m.l,ch,NV[ni],mod)})
+    });
+    if(!r.ok)throw new Error("HTTP "+r.status);
+    const d=await r.json();
+    const txt=d.content?.find(b=>b.type==="text")?.text||"";
+    const p=parseJ(txt);
+    if(!p){if(retry<1){callAPI(k,ch,ni,mod,1);return;}throw new Error("JSON invalide");}
+    renderAct(mod,m,k,ch,p);
+  }catch(e){
+    if(retry<1){callAPI(k,ch,ni,mod,1);return;}
+    document.getElementById('act-body').innerHTML=`
+      <div style="background:#fef2f2;border-radius:10px;padding:16px;text-align:center">
+        <p style="color:#c0392b;font-weight:700;margin-bottom:10px">⚠️ Erreur de chargement</p>
+        <p style="font-size:12px;color:#888;margin-bottom:10px">Vérifie ta connexion internet</p>
+        <button class="btn" style="background:#c0392b;color:#fff;border-color:#c0392b" onclick="openAct('${k}','${esc(ch)}','${mod}')">🔄 Réessayer</button>
+      </div>`;
+  }
+}
+
+function renderAct(mod,m,k,ch,d){
+  if(mod==="fiche"){
+    document.getElementById('act-body').innerHTML=`
+      <div class="card">
+        <p style="font-weight:700;color:${m.c};font-size:15px;margin-bottom:14px">${d.titre||ch}</p>
+        ${(d.points||[]).map((p,i)=>`
+          <div style="display:flex;gap:9px;margin-bottom:11px">
+            <span style="background:${m.bg};color:${m.c};min-width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">${i+1}</span>
+            <p style="font-size:13px;line-height:1.65">${p}</p>
+          </div>`).join('')}
+        ${d.astuce?`<div class="info-box" style="background:#FEF3E8"><p style="font-size:12px;color:#854F0B">💡 Astuce brevet : ${d.astuce}</p></div>`:''}
+        <button class="btn" style="background:${m.bg};color:${m.c}" onclick="openAct('${k}','${esc(ch)}','fiche')">Nouvelle fiche →</button>
+      </div>`;
+  }else if(mod==="quiz"){
+    document.getElementById('act-body').innerHTML=`
+      <div class="card">
+        <p style="font-size:14px;font-weight:600;line-height:1.65;margin-bottom:14px">${d.question||""}</p>
+        <div id="opts">
+          ${(d.options||[]).map(o=>`<button class="opt" onclick="ansQ(this,'${o[0]}','${d.reponse?.[0]||'A'}')">${o}</button>`).join('')}
+        </div>
+        <div id="qexpl" style="display:none">
+          <div class="info-box" style="background:#E6F1FB"><p style="font-size:12px;color:#185FA5;line-height:1.6">💬 ${d.explication||""}</p></div>
+          <button class="btn" style="background:${m.bg};color:${m.c}" onclick="openAct('${k}','${esc(ch)}','quiz')">Question suivante →</button>
+        </div>
+      </div>`;
+  }else{
+    document.getElementById('act-body').innerHTML=`
+      <div class="card" id="exo-card">
+        ${d.consigne?`<p style="font-weight:700;font-size:13px;margin-bottom:9px">📝 ${d.consigne}</p>`:''}
+        ${d.question?`<p style="font-size:13px;line-height:1.65;margin-bottom:14px">${d.question}</p>`:''}
+        <button class="btn" style="background:${m.bg};color:${m.c}" onclick="revExo('${esc(d.correction||'')}','${esc(d.conseil||'')}','${k}','${esc(ch)}','${m.c}','${m.bg}')">Voir la correction</button>
+      </div>`;
+  }
+}
+
+function ansQ(btn,sel,rep){
+  document.querySelectorAll('.opt').forEach(b=>{
+    const l=b.textContent.trim()[0];
+    b.classList.remove('ok','ko');
+    if(l===rep)b.classList.add('ok');
+    else if(l===sel)b.classList.add('ko');
+    b.onclick=null;
+  });
+  document.getElementById('qexpl').style.display='block';
+  if(sel===rep)scores[cMat]=Math.min(100,scores[cMat]+3);
+}
+
+function revExo(corr,conseil,k,ch,c,bg){
+  const card=document.getElementById('exo-card');
+  const btn=card.querySelector('button');
+  btn.insertAdjacentHTML('beforebegin',`
+    <div class="info-box" style="background:#e8f8f1">
+      <p style="font-size:10px;font-weight:700;color:#1a7a50;margin-bottom:4px">CORRECTION</p>
+      <p style="font-size:13px;line-height:1.65">${corr}</p>
+    </div>
+    ${conseil?`<div class="info-box" style="background:#FEF3E8"><p style="font-size:12px;color:#854F0B">💡 ${conseil}</p></div>`:''}`);
+  btn.textContent="Exercice suivant →";
+  btn.onclick=()=>openAct(k,ch,'exercice');
+}
+
+function startExam(k){
+  cMat=k;
+  const m=gm(k);
+  examDur=k==="ma"?120:k==="hg"?120:90;
+  examTl=examDur*60;
+  document.getElementById('exam-title').textContent=`${m.i} ${m.l} — ${examDur} min`;
+  updateExamTimer(m);
+  document.getElementById('exam-body').innerHTML=ach(k).map(ch=>`
+    <div class="exam-item" onclick="openAct('${k}','${esc(ch)}','exercice')">
+      <span>${ch}</span><span style="color:${m.c};font-weight:700">→</span>
+    </div>`).join('');
+  clearInterval(examInt);
+  examInt=setInterval(()=>{
+    examTl--;
+    updateExamTimer(gm(cMat));
+    if(examTl<=0){
+      clearInterval(examInt);
+      const m2=gm(cMat);
+      document.getElementById('exam-body').innerHTML=`
+        <div style="text-align:center;padding:40px 16px">
+          <div style="font-size:48px;margin-bottom:14px">🎉</div>
+          <p style="font-size:17px;font-weight:700;margin-bottom:6px">Temps écoulé !</p>
+          <button class="btn" style="background:${m2.c};color:#fff;border-color:${m2.c}" onclick="show('s-home')">Retour à l'accueil</button>
+        </div>`;
+    }
+  },1000);
+  show('s-exam');
+}
+
+function updateExamTimer(m){
+  const mm=Math.floor(examTl/60),ss=examTl%60;
+  const t=document.getElementById('exam-timer');
+  t.textContent=`${String(mm).padStart(2,"0")}:${String(ss).padStart(2,"0")}`;
+  t.style.color=examTl<600?"#e74c3c":m.c;
+  const pct=Math.round((examTl/(examDur*60))*100);
+  const pf=document.getElementById('exam-pf');
+  pf.style.width=pct+"%";
+  pf.style.background=examTl<600?"#e74c3c":m.c;
+}
+
+function stopExam(){clearInterval(examInt);show('s-home');}
+
+initHome();
+</script>
+</body>
+</html>
