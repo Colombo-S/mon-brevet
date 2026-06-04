@@ -24,7 +24,7 @@ exports.handler = async function(event) {
           contents: [{
             role: "user",
             parts: [{
-              text: body.system + "\n\nGénère le contenu demandé en JSON uniquement, sans markdown, sans texte avant ou après."
+              text: body.system + "\n\nGénère le contenu demandé en JSON uniquement, sans markdown, sans texte avant ou après. IMPORTANT: pour les QCM, la bonne réponse doit être répartie aléatoirement entre A, B, C et D — ne mets pas toujours A comme bonne réponse."
             }]
           }],
           generationConfig: {
